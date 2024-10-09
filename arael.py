@@ -4,6 +4,13 @@ from random import randint
 import struct
 import array
 
+""" Todo:
+    - construct pseudo header
+    - finish checksum
+    - construct packet
+    - randomize src port
+    - build flood loop
+"""
 
 #Generate a randomized IP to sent the SYN packets from
 
@@ -25,7 +32,7 @@ class TCPPacket:
         self.dst_port = dst_port
         self.flags = flags
 
-def main():
+def args():
     #Define command-line args
     parser = ArgumentParser()
     parser.add_argument('-t', '--target', action='store', help='Specify the target IP address')
@@ -49,11 +56,6 @@ def main():
             errors.append("Error: --c or --count is required.")
     if errors:
         raise ValueError("\n".join(errors))
-
-if __name__ == "__main__":
-    main()
-    print(rand_ip())
-
 
 
 def build(self) -> bytes:
@@ -89,10 +91,10 @@ def checksum(packet: bytes) ->int:
     #Flip bits of the sum and mask the lower 16 to produce the checksum
     return(~res) & 0xffff
 
-""" Todo:
-    - construct pseudo header
-    - finish checksum
-    - construct packet
-    - randomize src port
-    - build flood loop
-"""
+
+if __name__ == "__main__":
+    args()
+    print(rand_ip())
+
+
+
