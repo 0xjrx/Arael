@@ -32,6 +32,25 @@ class TCPPacket:
         self.dst_port = dst_port
         self.flags = flags
 
+    def build(self) -> bytes:
+        #Create binary representation of TCP Header
+        packet = struct.pack(
+            #!:Data should be packed in big-endian
+            #H: unsigned short(2 Bytes each)
+            #I: unsigned int(4 Bytes each)
+            #B: unsigned char(1 Byte each)
+            '!HHIIBBHHH',
+            self.src_port,  # Source Port
+            self.dst_port,  # Destination Port
+            0,              # Seq Number
+            0,              # Ack Number
+            5 << 4,         # Offset
+            self.flags,     # TCP Flags
+            8192,           # Sliding Window Value
+            0,              # Checksum (init, will be calculated later)
+            0               # Urgent pointer
+        )
+
 def args():
     #Define command-line args
     parser = ArgumentParser()
@@ -58,24 +77,6 @@ def args():
         raise ValueError("\n".join(errors))
 
 
-def build(self) -> bytes:
-    #Create binary representation of TCP Header
-    packet = struct.pack(
-        #!:Data should be packed in big-endian
-        #H: unsigned short(2 Bytes each)
-        #I: unsigned int(4 Bytes each)
-        #B: unsigned char(1 Byte each)
-        '!HHIIBBHHH',
-        self.src_port,  # Source Port
-        self.dst_port,  # Destination Port
-        0,              # Seq Number
-        0,              # Ack Number
-        5 << 4,         # Offset
-        self.flags,     # TCP Flags
-        8192,           # Sliding Window Value
-        0,              # Checksum (init, will be calculated later)
-        0               # Urgent pointer
-    )
 
 #Calculate Checksum for TCP Packet
 
