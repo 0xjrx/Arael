@@ -1,6 +1,7 @@
 # Arael (SYN Flooder)
 
 Arael is a Python-based tool designed to perform SYN flood attacks. It can be used for network stress testing, security research, or demonstrating denial-of-service attack principles. This tool sends a large number of SYN packets to a target, aiming to exhaust its connection resources. 
+
 **I started writing this during a college lecture because I was bored. I dont even known if it still works, just thought I'd add a readme so my profile looks nicer lol**
 
 **Disclaimer:** This tool is intended for educational and ethical testing purposes only. Unauthorized use of this tool against any network or system is illegal and unethical. The author is not responsible for any misuse or damage caused by this software. Always ensure you have explicit permission before using this tool on any network you do not own or manage.
